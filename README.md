@@ -10,6 +10,16 @@
 
 ---
 
+## Screenshots
+
+| Dashboard | Typing Drill |
+|:---------:|:------------:|
+| ![Dashboard](docs/screenshots/01-dashboard.png) | ![Drill](docs/screenshots/04-drill.png) |
+
+| Collocation Bank | Practice |
+|:----------------:|:--------:|
+| ![Collocations](docs/screenshots/03-collocations.png) | ![Practice](docs/screenshots/06-practice.png) |
+
 ## Features
 
 - **SM-2 Spaced Repetition** — scientifically proven algorithm schedules reviews at optimal intervals
