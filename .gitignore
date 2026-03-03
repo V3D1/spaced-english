@@ -46,6 +46,9 @@ next-env.d.ts
 /output/
 /screenshots/
 
+# internal docs (not for public repo)
+docs/launch-posts.md
+
 # AI coding assistants (catch-all)
 .agent*/
 .claude/
