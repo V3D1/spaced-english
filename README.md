@@ -35,6 +35,19 @@
 - **PWA Support** — install on mobile, works offline-capable
 - **Security Hardened** — bcrypt passwords, JWT sessions, rate limiting, honeypot protection
 
+## AI Features (Optional)
+
+Set `ANTHROPIC_API_KEY` in `.env` to enable 4 AI-powered features built with the Claude API:
+
+| Feature | API Pattern | Model | Description |
+|---------|-------------|-------|-------------|
+| **AI Sentence Coach** | `tool_use` (forced) | Sonnet | Evaluates practice sentences with structured feedback: naturalness score (1-5), corrections, explanations, alternatives |
+| **AI Drill Companion** | Cached generation | Haiku | Context-aware tips after each drill attempt. Cached per phrase — max 120 API calls ever, then $0 |
+| **Smart Review Agent** | Agentic tool loop | Sonnet | Autonomously calls 4 data tools to analyze your learning patterns, then produces weekly focus recommendations |
+| **MCP Server** | Model Context Protocol | — | Exposes learning data via MCP so Claude Code can query your progress. See [`mcp-server/README.md`](mcp-server/README.md) |
+
+All features are **opt-in** — the app works fully without an API key. Rate limited to 20 AI calls/day per user.
+
 ## Quick Start
 
 ### Prerequisites
@@ -102,6 +115,7 @@ Browser  →  Next.js 16 (App Router + Server Actions)  →  Drizzle ORM  →  P
 | UI Components | Radix UI + shadcn/ui |
 | Auth | JWT (jose) + bcrypt |
 | Validation | Zod |
+| AI | Claude API (Anthropic SDK) |
 | Testing | Vitest |
 
 ## Configuration
@@ -116,6 +130,7 @@ Browser  →  Next.js 16 (App Router + Server Actions)  →  Drizzle ORM  →  P
 | `LOGIN_RATE_WINDOW_MINUTES` | No | `15` | Rate limiting window |
 | `LOGIN_RATE_MAX_ATTEMPTS` | No | `5` | Max login attempts per window |
 | `LOGIN_LOCKOUT_LEVELS_MINUTES` | No | `15,60,1440` | Progressive lockout durations |
+| `ANTHROPIC_API_KEY` | No | — | Enables AI Coach features (sentence eval, drill tips, smart review) |
 
 ## Adding Custom Content
 
@@ -146,6 +161,7 @@ After editing, run `pnpm db:seed` to reload the database.
 | `pnpm db:studio` | Open Drizzle Studio (DB browser) |
 | `pnpm progress:reset` | Reset all learning progress |
 | `pnpm setup` | Full one-command setup |
+| `pnpm mcp:start` | Start MCP server (stdio) |
 
 ## Contributing
 

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useTransition } from 'react';
 import { submitDrillAttempt } from '../actions';
 import { toast } from 'sonner';
 import type { Collocation } from '@/lib/db/schema';
-import { CheckCircle, XCircle, RotateCcw, Trophy } from 'lucide-react';
+import { CheckCircle, XCircle, RotateCcw, Trophy, Lightbulb } from 'lucide-react';
 import { TtsButton } from '@/components/tts-button';
 
 interface DrillClientProps {
@@ -31,6 +31,7 @@ export function DrillClient({ collocations }: DrillClientProps) {
   const [total, setTotal] = useState(0);
   const [startTime, setStartTime] = useState(() => Date.now());
   const [isPending, startTransition] = useTransition();
+  const [lastTip, setLastTip] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const current = queue[currentIndex];
@@ -51,6 +52,7 @@ export function DrillClient({ collocations }: DrillClientProps) {
       }
 
       setTotal((t) => t + 1);
+      setLastTip(result.aiTip ?? null);
       if (result.isCorrect) {
         setScore((s) => s + 1);
         setState('correct');
@@ -189,6 +191,15 @@ export function DrillClient({ collocations }: DrillClientProps) {
           <p className="text-center text-sm text-muted-foreground">
             {current.phrase}
           </p>
+          {lastTip && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/50">
+              <Lightbulb className="h-4 w-4 text-amber-600 mt-0.5 shrink-0 dark:text-amber-400" />
+              <div>
+                <span className="font-medium text-amber-700 dark:text-amber-300">AI Tip</span>
+                <p className="text-amber-900 dark:text-amber-200 mt-0.5">{lastTip}</p>
+              </div>
+            </div>
+          )}
           <button
             onClick={next}
             className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
@@ -212,6 +223,15 @@ export function DrillClient({ collocations }: DrillClientProps) {
               {current.phrase}
             </p>
           </div>
+          {lastTip && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950/50">
+              <Lightbulb className="h-4 w-4 text-amber-600 mt-0.5 shrink-0 dark:text-amber-400" />
+              <div>
+                <span className="font-medium text-amber-700 dark:text-amber-300">AI Tip</span>
+                <p className="text-amber-900 dark:text-amber-200 mt-0.5">{lastTip}</p>
+              </div>
+            </div>
+          )}
           <button
             onClick={next}
             className="w-full py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"

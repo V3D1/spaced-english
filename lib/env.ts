@@ -10,6 +10,8 @@ const envSchema = z.object({
   AUTH_LOG_RETENTION_DAYS: z.coerce.number().int().min(1).default(30),
   SEED_USER_EMAIL: z.string().email().optional(),
   SEED_USER_PASSWORD: z.string().min(12).optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  AI_DAILY_LIMIT: z.coerce.number().int().default(20),
 });
 
 function parseEnv() {

@@ -2,9 +2,12 @@
 
 import { eq, desc, sql, and } from 'drizzle-orm';
 import { db } from '@/lib/db/drizzle';
-import { collocations, sentencePractices } from '@/lib/db/schema';
+import { collocations, sentencePractices, aiSentenceEvaluations } from '@/lib/db/schema';
 import { requireUser } from '@/lib/db/queries';
 import { revalidatePath } from 'next/cache';
+import { isAIEnabled } from '@/lib/ai/client';
+import { checkAIRateLimit, recordAIUsage } from '@/lib/ai/rate-limit';
+import { evaluateSentence } from '@/lib/ai/sentence-coach';
 
 export async function getPracticePool() {
   const user = await requireUser();
@@ -36,14 +39,88 @@ export async function submitSentence(collocationId: number, sentence: string) {
 
   if (!collocation) return { error: 'Collocation not found' };
 
-  await db.insert(sentencePractices).values({
+  const [inserted] = await db.insert(sentencePractices).values({
     userId: user.id,
     collocationId,
     sentence: trimmed,
-  });
+  }).returning({ id: sentencePractices.id });
 
   revalidatePath('/practice');
-  return { success: true };
+  return { success: true, sentencePracticeId: inserted.id };
+}
+
+export async function evaluatePracticeSentence(sentencePracticeId: number) {
+  const user = await requireUser();
+
+  if (!isAIEnabled()) {
+    return { error: 'AI features are not enabled' };
+  }
+
+  const withinLimit = await checkAIRateLimit(user.id);
+  if (!withinLimit) {
+    return { error: 'Daily AI limit reached. Try again tomorrow.' };
+  }
+
+  // Check cache
+  const [existing] = await db
+    .select()
+    .from(aiSentenceEvaluations)
+    .where(eq(aiSentenceEvaluations.sentencePracticeId, sentencePracticeId))
+    .limit(1);
+
+  if (existing) {
+    return {
+      evaluation: {
+        naturalness: existing.naturalness,
+        correctedSentence: existing.correctedSentence,
+        explanation: existing.explanation,
+        alternativePhrase: existing.alternativePhrase,
+      },
+    };
+  }
+
+  // Load sentence + collocation
+  const [practice] = await db
+    .select({
+      sentence: sentencePractices.sentence,
+      userId: sentencePractices.userId,
+      phrase: collocations.phrase,
+      translation: collocations.translation,
+      example: collocations.example,
+    })
+    .from(sentencePractices)
+    .innerJoin(collocations, eq(sentencePractices.collocationId, collocations.id))
+    .where(
+      and(
+        eq(sentencePractices.id, sentencePracticeId),
+        eq(sentencePractices.userId, user.id)
+      )
+    )
+    .limit(1);
+
+  if (!practice) {
+    return { error: 'Sentence not found' };
+  }
+
+  const { evaluation, inputTokens, outputTokens } = await evaluateSentence(
+    practice.sentence,
+    practice.phrase,
+    practice.translation,
+    practice.example
+  );
+
+  // Persist evaluation
+  await db.insert(aiSentenceEvaluations).values({
+    sentencePracticeId,
+    naturalness: evaluation.naturalness,
+    correctedSentence: evaluation.correctedSentence,
+    explanation: evaluation.explanation,
+    alternativePhrase: evaluation.alternativePhrase,
+  });
+
+  await recordAIUsage(user.id, 'sentence_coach', inputTokens, outputTokens);
+
+  return { evaluation };
 }
 
 export async function getSentenceHistory() {

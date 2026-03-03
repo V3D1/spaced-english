@@ -1,17 +1,25 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
-import { submitSentence } from './actions';
+import { submitSentence, evaluatePracticeSentence } from './actions';
 import { toast } from 'sonner';
 import type { Collocation } from '@/lib/db/schema';
-import { RefreshCw, Send, WandSparkles } from 'lucide-react';
+import { RefreshCw, Send, WandSparkles, Sparkles, Star, Loader2 } from 'lucide-react';
 import { TtsButton } from '@/components/tts-button';
 import { PronunciationChallenge } from '@/components/pronunciation-challenge';
+
+interface EvaluationResult {
+  naturalness: number;
+  correctedSentence: string;
+  explanation: string;
+  alternativePhrase: string;
+}
 
 interface PracticeFormProps {
   pool: Collocation[];
   initialLevel?: string;
   initialDomain?: string;
+  aiEnabled?: boolean;
 }
 
 function pickRandom<T>(arr: T[], exclude?: T) {
@@ -38,12 +46,16 @@ export function PracticeForm({
   pool,
   initialLevel,
   initialDomain,
+  aiEnabled = false,
 }: PracticeFormProps) {
   const [levelFilter, setLevelFilter] = useState(initialLevel || '');
   const [domainFilter, setDomainFilter] = useState(initialDomain || '');
   const [manualPickId, setManualPickId] = useState<string>('');
   const [sentence, setSentence] = useState('');
   const [isPending, startTransition] = useTransition();
+  const [lastPracticeId, setLastPracticeId] = useState<number | null>(null);
+  const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
 
   const filteredPool = useMemo(() => {
     return pool.filter((item) => {
@@ -90,10 +102,29 @@ export function PracticeForm({
       }
 
       toast.success('Sentence saved');
+      setLastPracticeId(result.sentencePracticeId ?? null);
+      setEvaluation(null);
       setSentence('');
       setManualPickId('');
       setRandomCollocation(pickRandom(filteredPool, selectedCollocation));
     });
+  }
+
+  async function handleEvaluate() {
+    if (!lastPracticeId) return;
+    setIsEvaluating(true);
+    try {
+      const result = await evaluatePracticeSentence(lastPracticeId);
+      if ('error' in result) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.evaluation) {
+        setEvaluation(result.evaluation);
+      }
+    } finally {
+      setIsEvaluating(false);
+    }
   }
 
   function handleSkip() {
@@ -255,6 +286,69 @@ export function PracticeForm({
               Submit Sentence
             </button>
           </div>
+
+          {/* AI Evaluation */}
+          {aiEnabled && lastPracticeId && !evaluation && (
+            <button
+              onClick={handleEvaluate}
+              disabled={isEvaluating}
+              className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-lg border border-purple-300 bg-purple-50 text-purple-700 text-sm font-medium hover:bg-purple-100 disabled:opacity-50 dark:border-purple-700 dark:bg-purple-950 dark:text-purple-300 dark:hover:bg-purple-900"
+            >
+              {isEvaluating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              {isEvaluating ? 'Evaluating...' : 'Get AI Feedback'}
+            </button>
+          )}
+
+          {evaluation && (
+            <div className="border border-purple-200 rounded-lg p-4 bg-purple-50/50 space-y-3 dark:border-purple-800 dark:bg-purple-950/50">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                  AI Coach Feedback
+                </span>
+              </div>
+
+              {/* Stars */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }, (_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-4 w-4 ${
+                      i < evaluation.naturalness
+                        ? 'fill-yellow-400 text-yellow-400'
+                        : 'text-muted-foreground/30'
+                    }`}
+                  />
+                ))}
+                <span className="text-xs text-muted-foreground ml-1">
+                  {evaluation.naturalness}/5 naturalness
+                </span>
+              </div>
+
+              {/* Explanation */}
+              <p className="text-sm">{evaluation.explanation}</p>
+
+              {/* Corrected sentence */}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Corrected version:</p>
+                <p className="text-sm text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/50 rounded px-3 py-2">
+                  {evaluation.correctedSentence}
+                </p>
+              </div>
+
+              {/* Alternative */}
+              <div className="space-y-1">
+                <p className="text-xs text-muted-foreground">Alternative phrasing:</p>
+                <p className="text-sm italic text-muted-foreground">
+                  {evaluation.alternativePhrase}
+                </p>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

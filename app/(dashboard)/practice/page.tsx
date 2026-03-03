@@ -1,5 +1,6 @@
 import { getPracticePool, getSentenceHistory, getPracticeStats } from './actions';
 import { PracticeForm } from './practice-form';
+import { isAIEnabled } from '@/lib/ai/client';
 import Link from 'next/link';
 
 type PageParams = Promise<{
@@ -35,7 +36,7 @@ export default async function PracticePage({
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link href="/flashcards?type=word" prefetch className="rounded-full border px-3 py-1.5 text-xs hover:bg-accent">
-            Przejdz do slowek
+            Go to vocabulary
           </Link>
           <Link href="/practice?level=B2" prefetch className="rounded-full border px-3 py-1.5 text-xs hover:bg-accent">
             B2
@@ -53,6 +54,7 @@ export default async function PracticePage({
         pool={pool}
         initialLevel={params.level}
         initialDomain={params.domain}
+        aiEnabled={isAIEnabled()}
       />
 
       {/* History */}

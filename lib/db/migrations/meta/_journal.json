@@ -36,6 +36,13 @@
       "when": 1771421188641,
       "tag": "0004_thick_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1772550817630,
+      "tag": "0005_silky_chamber",
+      "breakpoints": true
     }
   ]
 }

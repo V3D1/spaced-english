@@ -32,9 +32,12 @@
     "db:studio": "drizzle-kit studio",
     "progress:reset": "npx tsx scripts/reset_progress.ts",
     "security:report": "npx tsx scripts/security_report.ts",
-    "security:unlock": "npx tsx scripts/security_unlock.ts"
+    "security:unlock": "npx tsx scripts/security_unlock.ts",
+    "mcp:start": "npx tsx mcp-server/index.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "@tailwindcss/postcss": "4.1.7",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",

@@ -178,6 +178,77 @@ export const authLockouts = pgTable(
   })
 );
 
+// ─── AI Feature Tables ───────────────────────────────────────────
+
+export const aiUsageLogs = pgTable('ai_usage_logs', {
+  id: serial('id').primaryKey(),
+  userId: integer('user_id')
+    .references(() => users.id)
+    .notNull(),
+  feature: varchar('feature', { length: 50 }).notNull(),
+  inputTokens: integer('input_tokens').notNull().default(0),
+  outputTokens: integer('output_tokens').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const aiSentenceEvaluations = pgTable(
+  'ai_sentence_evaluations',
+  {
+    id: serial('id').primaryKey(),
+    sentencePracticeId: integer('sentence_practice_id')
+      .references(() => sentencePractices.id, { onDelete: 'cascade' })
+      .notNull(),
+    naturalness: integer('naturalness').notNull(),
+    correctedSentence: text('corrected_sentence').notNull(),
+    explanation: text('explanation').notNull(),
+    alternativePhrase: text('alternative_phrase').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    spUnique: uniqueIndex('ai_sentence_eval_sp_unique').on(
+      table.sentencePracticeId
+    ),
+  })
+);
+
+export const aiDrillTips = pgTable(
+  'ai_drill_tips',
+  {
+    id: serial('id').primaryKey(),
+    phrase: varchar('phrase', { length: 255 }).notNull(),
+    tipType: varchar('tip_type', { length: 16 }).notNull(), // 'correct' | 'incorrect'
+    tip: text('tip').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    phraseTipUnique: uniqueIndex('ai_drill_tips_phrase_type_unique').on(
+      table.phrase,
+      table.tipType
+    ),
+  })
+);
+
+export const aiWeeklyRecommendations = pgTable(
+  'ai_weekly_recommendations',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .references(() => users.id)
+      .notNull(),
+    weekKey: varchar('week_key', { length: 16 }).notNull(), // e.g. '2026-W09'
+    focusIds: text('focus_ids').notNull(), // JSON array of collocation IDs
+    patternAnalysis: text('pattern_analysis').notNull(),
+    difficultyAdvice: text('difficulty_advice').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    userWeekUnique: uniqueIndex('ai_weekly_rec_user_week_unique').on(
+      table.userId,
+      table.weekKey
+    ),
+  })
+);
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -191,3 +262,7 @@ export type Milestone = typeof milestones.$inferSelect;
 export type SentencePractice = typeof sentencePractices.$inferSelect;
 export type AuthLoginAttempt = typeof authLoginAttempts.$inferSelect;
 export type AuthLockout = typeof authLockouts.$inferSelect;
+export type AIUsageLog = typeof aiUsageLogs.$inferSelect;
+export type AISentenceEvaluation = typeof aiSentenceEvaluations.$inferSelect;
+export type AIDrillTip = typeof aiDrillTips.$inferSelect;
+export type AIWeeklyRecommendation = typeof aiWeeklyRecommendations.$inferSelect;

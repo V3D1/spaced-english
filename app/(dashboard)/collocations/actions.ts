@@ -6,6 +6,7 @@ import { collocations, flashcards } from '@/lib/db/schema';
 import { requireUser } from '@/lib/db/queries';
 import { revalidatePath } from 'next/cache';
 import { localDateString } from '@/lib/utils';
+import { getDrillTip } from '@/lib/ai/drill-tips';
 
 const PASSIVE_THRESHOLD = 45;
 const ACTIVE_THRESHOLD = 80;
@@ -180,6 +181,17 @@ export async function submitDrillAttempt(collocationId: number, answer: string) 
   revalidatePath('/collocations/drill');
   revalidatePath('/dashboard');
 
+  // AI tip (fire-and-forget for latency; cached after first call)
+  let aiTip: string | null = null;
+  try {
+    aiTip = await getDrillTip(
+      collocation.phrase,
+      isCorrect ? 'correct' : 'incorrect'
+    );
+  } catch {
+    // Silently fail — AI tips are non-critical
+  }
+
   return {
     success: true,
     isCorrect,
@@ -190,6 +202,7 @@ export async function submitDrillAttempt(collocationId: number, answer: string) 
     correctStreak: next.correctStreak,
     wrongStreak: next.wrongStreak,
     isHard: next.isHard,
+    aiTip,
   };
 }
 

@@ -2,6 +2,8 @@ import { getDashboardData } from './actions';
 import { MilestoneToggle } from './milestone-toggle';
 import { StreakCalendar } from './streak-calendar';
 import { DailyCollocation } from './daily-collocation';
+import { AIReviewPanel } from './ai-review-panel';
+import { isAIEnabled } from '@/lib/ai/client';
 import { Flame, BookOpen, Target, Plus, PenLine, ArrowRight, Rocket, Mic } from 'lucide-react';
 import Link from 'next/link';
 
@@ -215,6 +217,9 @@ export default async function DashboardPage() {
 
       {/* Streak Calendar */}
       <StreakCalendar days={data.last30Days} />
+
+      {/* AI Review Panel */}
+      {isAIEnabled() && <AIReviewPanel />}
 
       {/* Daily Collocation */}
       <DailyCollocation collocation={data.dailyCollocation} />
